@@ -169,20 +169,46 @@ void address_field(char* string, char* result){
     range(string,6,16,result);
 }
 
+
+
+//Двоичное число в десятичное число
+int str_int(char* next_inst){
+	int result = 0;
+	for(int i = 0, j = strlen(next_inst)-1; j >= 0; i++,j--){
+		int number = 1;
+		if(next_inst[i] - '0'){
+			for(int k = j; k > 0; k--){
+				number *= 2;
+			}
+			result += number;
+		}
+	}
+	return result;
+}
+
 //Умножение двух двоичных чисел
 void mul_two(char* a,char* b,char* res){
 	if(strlen(a) != strlen(b)){
 		printf("not equal");
 		exit(1);
     }
+	size_t length = strlen(a);
+	char copy_1[length + 1];
+	
+	for(int i = 0; i < length;i++){
+		copy_1[i] = a[i];
+	}
+	
+	copy_1[length] = '\0';
 
-	for(int i = strlen(a)-1; i >= 0; i--){
-		if(b[i] - '0' == 1){
-			char str_copy[strlen(a)];
-			strcpy(str_copy,a);
-			shift(str_copy, strlen(b) - i - 1);
-			add_two(res,str_copy,res);
+	if(!str_int(res)){
+		for(int i = 0; i < length;i++){
+			res[i] = a[i];
 		}
+	}
+	int num = str_int(b);
+	for(int i = 0; i < num-1; i++){
+		add_two(res,copy_1,res);
 	}
 
 }
@@ -212,22 +238,39 @@ void int_str(int value,char* instruction){
 	}
 }
 
-//Двоичное число в десятичное число
-int str_int(char* next_inst){
-	int result = 0;
-	for(int i = 0, j = strlen(next_inst)-1; j >= 0; i++,j--){
-		int number = 1;
-		if(next_inst[i] - '0'){
-			for(int k = j; k > 0; k--){
-				number *= 2;
-			}
-			result += number;
+
+void inversion(char* string){
+	size_t len = strlen(string);
+	for(int i = 0; i <len;i++){
+		if(string[i] - '0'){
+			string[i] = '0';
+		}else{
+			string[i] = '1';
 		}
 	}
-	return result;
+	increment(string);
 }
 
-//Запись в - 1(17), запись откуда - 2(11), память - 3
+void subtraction_method(char* a,char* b,char* res){
+	if(strlen(a) != strlen(b)){
+		printf("not equal");
+		exit(1);
+    }
+
+	// printf("%s\n%d\n",a,str_int(a));
+	// printf("%s\n%d\n",b,str_int(b));
+
+	inversion(b);
+
+	add_two(a,b,res);
+
+	if(res[0] - '0'){
+		inversion(res);
+	}
+
+}
+
+//операция чтения данных из память
 void read_memory(char current_inst[INSTRUCTION_LENGHT] ,char next_insct[ADRESS_FIELD_LENGHT],char memory[NUM_BLOCKS][BLOCK_SIZE]){
 	int num_adress = str_int(next_insct);
     for(int i = 0;i < INSTRUCTION_LENGHT - 1; i++){
@@ -263,42 +306,42 @@ void inv_write(char* in_rec,char* from_rec){
 //Печать в консоль мнемонической команды(Команды поля)
 void mnemonicCodeOp(char* operationF){
 	if(equal_string(operationF,"0000")){
-		printf("HALT");
+		printf(" HALT");
 	}else if(equal_string(operationF,"0001")){
-		printf("LOAD");
+		printf(" LOAD");
 	}else if(equal_string(operationF,"0010")){
-		printf("STORE");
+		printf(" STORE");
 	}else if(equal_string(operationF,"0011")){
-		printf("CALL");
+		printf(" CALL");
 	}else if(equal_string(operationF,"0100")){
-		printf("BR");
+		printf(" BR");
 	}else if(equal_string(operationF,"0101")){
-		printf("BREQ");
+		printf(" BREQ");
 	}else if(equal_string(operationF,"0110")){
-		printf("BRGE");
+		printf(" BRGE");
 	}else if(equal_string(operationF,"0111")){
-		printf("BRLT");
+		printf(" BRLT");
 	}else if(equal_string(operationF,"1000")){
-		printf("ADD");
+		printf(" ADD");
 	}else if(equal_string(operationF,"1001")){
-		printf("SUB");
+		printf(" SUB");
 	}else if(equal_string(operationF,"1010")){
-		printf("MUL");
+		printf(" MUL");
 	}else if(equal_string(operationF,"1011")){
-		printf("DIV");
+		printf(" DIV");
 	}	
 }
 
 //Печать в консоль мнемонической команды(режим адреса поля)
 void mnemonicCodeAdModeField(char* adressModeF){
 	if(equal_string(adressModeF,"00")){
-		printf(" ");
+		printf("  ");
 	}else if(equal_string(adressModeF,"01")){
-		printf("=");
+		printf(" = ");
 	}else if(equal_string(adressModeF,"10")){
-		printf("$");
+		printf(" $ ");
 	}else if(equal_string(adressModeF,"11")){
-		printf("@");
+		printf(" @ ");
 	}
 }
 
@@ -375,13 +418,22 @@ void mnemonic_to_bin(char* mnem_OP,char* mnem_ADF,int num,int adress, char memor
 	}
 }
 
-void print_registr(char* PC,char* IR, char* MAR,char* MBR,char* XR,char* AC){
-	printf("PC:%s\n",PC);
-	printf("IR:%s\n",IR);
-	printf("MAR:%s\n",MAR);
-	printf("MBR:%s\n",MBR);
-	printf("XR:%s\n",XR);
-	printf("AC:%s\n",AC);
+void print_registr(char* PC,char* IR, char* MAR,char* MBR,char* XR,char* AC,char* adress_field,char* operation_field){
+	// printf("MAR:%s\n",MAR);
+	// printf("MBR:%s\n",MBR);
+	mnemonicCodeOp(operation_field);
+	mnemonicCodeAdModeField(adress_field);
+	printf("%d\n",str_int(AC));
+	printf("AC:%s(%d)|XR:%s(%d)|PC:%s(%d)|IR:%s|MAR:%s|MBR:%s|",AC,str_int(AC),XR,str_int(XR),PC,str_int(PC),IR,MAR,MBR);
+}
+
+
+void write_memory_cell(int num,int address,char memory[NUM_BLOCKS][BLOCK_SIZE]){
+	char bin_num[ADRESS_FIELD_LENGHT] = "0000000000";
+	int_str(num,bin_num);
+	for(int i = 0; i < 10;i++){
+		memory[i + 6][address] = bin_num[i];
+	}
 }
 
 void main_loop(){
@@ -403,17 +455,45 @@ void main_loop(){
     }
 	//!!!!!AC = 15
 	
-	mnemonic_to_bin("LOAD","=",13,0,memory);
-	mnemonic_to_bin("ADD","=",2,1,memory);
-    mnemonic_to_bin("HALT"," ",0,2,memory);
-	// print_registr(PC,IR, MAR, MBR, XR, AC);
-	//mnemonic_to_bin("LOAD","=",13,0,memory);
-  	
+	// mnemonic_to_bin("LOAD","=",13,0,memory);
+	// mnemonic_to_bin("ADD","=",2,1,memory);
+    // mnemonic_to_bin("HALT"," ",0,2,memory);
+
+	// for(int i=10; i>0; i--);
+	// mnemonic_to_bin("LOAD","=",10,0,memory);//int i = 10
+	// mnemonic_to_bin("SUB","=",1,1,memory);
+	// mnemonic_to_bin("BREQ","=",4,2,memory);
+	// mnemonic_to_bin("BR","=",1,3,memory);
+	// mnemonic_to_bin("HALT"," ",0,4,memory);
+	// f := 1
+	// for i := a; i > 0; i-- {
+	// 	f = i * f
+	// }
+	// return f
+	write_memory_cell(1,10,memory); //f
+	write_memory_cell(6,11,memory); // i=a
+	write_memory_cell(1,12,memory); //i--
+
+	mnemonic_to_bin("LOAD"," ",10,0,memory);
+	mnemonic_to_bin("MUL"," ",11,1,memory);
+	mnemonic_to_bin("STORE"," ",10,2,memory);
+
+	mnemonic_to_bin("LOAD"," ",11,3,memory);
+	mnemonic_to_bin("SUB"," ",12,4,memory);
+	mnemonic_to_bin("STORE"," ",11,5,memory);
+
+	mnemonic_to_bin("BREQ","=",8,6,memory);
+	mnemonic_to_bin("BR","=",0,7,memory);
+
+	mnemonic_to_bin("HALT"," ",0,8,memory);
+	//
+
 	
 
+
+
+
 	while(1){
-		// printf("START\n");
-		// print_registr(PC, IR, MAR, MBR, XR, AC);
 	//1.
 		read_memory(IR,PC,memory);
 		
@@ -422,20 +502,16 @@ void main_loop(){
 		address_field(IR,adress_f_IR);
 		address_field(MBR,adress_f_MBR);
 
-		if(equal_string(ad_mode_field,"00")){
-			//printf("\ndirect mode\n");
+		if(equal_string(ad_mode_field,"00")){ //direct mode " "
 			inv_write(MAR,adress_f_IR);
-		}else if(equal_string(ad_mode_field,"01")){
-			//printf("\nimmediate mode\n");
+		}else if(equal_string(ad_mode_field,"01")){// immediate mode =
 			inv_write(MAR,adress_f_IR);
 			inv_write(MBR,MAR);
-		}else if(equal_string(ad_mode_field,"10")){
-			//printf("\nindexed mode\n");
+		}else if(equal_string(ad_mode_field,"10")){//indexed mode $
 			inv_write(MAR,adress_f_IR);
 			add_two(MAR,XR,MAR);
 			
-		}else if(equal_string(ad_mode_field,"11")){
-			//printf("\nindirect mode\n");
+		}else if(equal_string(ad_mode_field,"11")){//indirect mode @
 			inv_write(MAR,adress_f_IR);
 			read_memory(MBR,MAR,memory);
 			inv_write(MAR,adress_f_MBR);
@@ -453,27 +529,26 @@ void main_loop(){
 			}
 			inv_write(AC,MBR);
 		}else if(equal_string(op_fil,"0010")){//store
-			read_memory(MBR,AC,memory);
+			// read_memory(MBR,AC,memory);
+			inv_write(MBR,AC);
 			write_memory(MAR,MBR,memory);
 		}else if(equal_string(op_fil,"0011")){//call
 			inv_write(MBR,PC);
 			write_memory(MAR,MBR,memory);
 			inv_write(PC,MAR);
 			increment(PC);
-		}else if(equal_string(op_fil,"0100")){//br
+		}else if(equal_string(op_fil,"0100")){//br прыжки(циклы) на участок памяти
 			inv_write(PC,MAR);
-		}else if(equal_string(op_fil,"0101")){//breq 
-			if(equal_string(AC,"0000000000000000")){//прыжки
+		}else if(equal_string(op_fil,"0101")){//breq прыжки(циклы) на участок памяти
+			if(equal_string(AC,"0000000000000000")){
 				inv_write(PC,MAR);
 			}
-		}else if(equal_string(op_fil,"0110")){//brge
+		}else if(equal_string(op_fil,"0110")){//brge прыжки(циклы) на участок памяти
 			printf("\nnone_brge");
 			exit(1);
-			//прыжки на участок памяти
-		}else if(equal_string(op_fil,"0111")){//brlt
+		}else if(equal_string(op_fil,"0111")){//brlt прыжки(циклы) на участок памяти
 			printf("\nnone_brlt");
 			exit(1);
-			//прыжки(циклы) на участок памяти
 		}else if(equal_string(op_fil,"1000")){//add
 			if(!equal_string(ad_mode_field,"01")){
 				read_memory(MBR,MAR,memory);
@@ -496,8 +571,10 @@ void main_loop(){
 			}
 			divs(AC,MBR,AC);
 		}
-		// printf("END\n");
-		print_registr(PC, IR, MAR, MBR, XR, AC);
+		// for(int i = 0; i < 16;i++){
+		// printf("%c",memory[i][0]);
+		// }
+		print_registr(PC, IR, MAR, MBR, XR, AC,ad_mode_field,op_fil);
 		printf("\n");
 	}
 }
@@ -505,6 +582,17 @@ void main_loop(){
 
 int main(){
     main_loop();
+	char str1[17] = "0000000010000110"; //2061
+	char str2[17] = "0000000000100011"; //1165
+	char str3[17] = "0000000000000000";
+
+
+	// subtraction_method(str1,str2,str1);
+	// inversion(str1);
+	// printf("%s\n%d\n",str1,str_int(str1));
+	// printf("%s\n%d\n",str2,str_int(str2));
+	// mul_two(str1,str2,str1);
+	// printf("%s\n%d\n",str1,str_int(str1));
 	//printf("asd");
 	//char str2[17] = "1000110000001101";   // ADD @13
 	//mnemonic_code(str2);
